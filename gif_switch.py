@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QMovie
 import RPi.GPIO as GPIO
 import sys
+import time
 
 class Ui_MainWindow(object):
         def setupUi(self, MainWindow):
@@ -31,10 +32,20 @@ class Ui_MainWindow(object):
             self.movie.frameChanged.connect(self.scale_gif)
             self.movie.start()
 
-            # Set up the GPIO for button
+            # Set up the GPIO for Pause Frame GIF Button
+            GPIO.setmode(GPIO.BCM)
+            self.pause_button = 14
+            GPIO.setup(self.pause_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+            # Set up the GPIO for Switch GIF button
             GPIO.setmode(GPIO.BCM)
             self.button_pin = 15
             GPIO.setup(self.button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+            # Set up the GPIO for Wake Button
+            GPIO.setmode(GPIO.BCM)
+            self.wake_button = 23
+            GPIO.setup(self.wake_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
             #Set up a QTimer for handing button presses
             self.button_timer = QtCore.QTimer(self.centralwidget)
@@ -61,10 +72,29 @@ class Ui_MainWindow(object):
             self.movie.setFileName(self.gifs[self.movie_index])
             self.movie.start()
 
+        def pause_gif(self):
+            # Pause the current QMovie
+            self.movie.setPaused(True)
+
+        def play_gif(self):
+            # Play the current QMovie
+            self.movie.start()
+
         def check_button_state(self):
             # Check if the button is pressed and change the GIF accordingly
             if GPIO.input(self.button_pin) == GPIO.LOW:
                 self.change_gif()
+
+            count = 0
+            if GPIO.input(self.pause_button) == GPIO.LOW:
+                self.pause_gif()
+                count = (count + 1) % 2
+            else:
+                self.play_gif()
+
+            if GPIO.input(self.wake_button) == GPIO.LOW:
+                print("Wake button pressed")
+                time.sleep(0.2)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
@@ -75,9 +105,9 @@ if __name__ == "__main__":
 
     try:
         sys.exit(app.exec_())
-    
+
     except KeyboardInterrupt:
         print("Exiting...")
-    
+
     finally:
         GPIO.cleanup()
