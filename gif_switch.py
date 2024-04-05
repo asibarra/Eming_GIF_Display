@@ -7,6 +7,7 @@ import time
 class Ui_MainWindow(object):
         def setupUi(self, MainWindow):
             MainWindow.setObjectName("MainWindow")
+            self.is_playing = False
 
             # Set the window to be fullscreen
             MainWindow.showFullScreen()
@@ -72,29 +73,29 @@ class Ui_MainWindow(object):
             self.movie.setFileName(self.gifs[self.movie_index])
             self.movie.start()
 
-        def pause_gif(self):
-            # Pause the current QMovie
-            self.movie.setPaused(True)
-
-        def play_gif(self):
-            # Play the current QMovie
-            self.movie.start()
+        def toggle_play(self):
+            self.is_playing = not self.is_playing
+            if self.is_playing:
+                print("Play")
+                self.movie.start()
+            else:
+                print("Pause")
+                self.movie.stop()
 
         def check_button_state(self):
             # Check if the button is pressed and change the GIF accordingly
             if GPIO.input(self.button_pin) == GPIO.LOW:
                 self.change_gif()
 
-            count = 0
+            # Initial State
             if GPIO.input(self.pause_button) == GPIO.LOW:
-                self.pause_gif()
-                count = (count + 1) % 2
-            else:
-                self.play_gif()
+               self.toggle_play()
+               time.sleep(0.2)
+               while GPIO.input(self.button_pin) == GPIO.LOW:
+                   pass
 
             if GPIO.input(self.wake_button) == GPIO.LOW:
                 print("Wake button pressed")
-                time.sleep(0.2)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
